@@ -54,4 +54,37 @@ class Map:
     
     def compute_detection_map(self) -> np.array:
         """ Computes the detection map for each coordinate in the map (with all the radars) """
-        ...
+        # Create a grid of coordinates covering the entire map
+        lat_range = np.linspace(start=self.boundaries.min_lat, stop=self.boundaries.max_lat, num=self.height)
+        lon_range = np.linspace(start=self.boundaries.min_lon, stop=self.boundaries.max_lon, num=self.width)
+        
+        # Initialize detection map with zeros
+        detection_map = np.zeros(shape=(self.height, self.width), dtype=np.float32)
+        
+        # For each cell in the grid, compute detection level from all radars
+        for i in tqdm(range(self.height), desc="Computing detection map"):
+            for j in range(self.width):
+                # Current cell coordinates
+                lat = lat_range[i]
+                lon = lon_range[j]
+                
+                # Compute maximum detection level among all radars
+                max_detection = 0.0
+                for radar in self.radars:
+                    detection_level = radar.compute_detection_level(latitude=lat, longitude=lon)
+                    max_detection = max(max_detection, detection_level)
+                
+                # Store the maximum detection level for this cell
+                detection_map[i, j] = max_detection
+        
+        # Apply MinMax scaling to normalize detection values to [0, 1] range as required
+        if np.max(detection_map) > 0:
+            min_value = np.min(detection_map)
+            max_value = np.max(detection_map)
+            if max_value > min_value:  # Avoid division by zero
+                detection_map = (detection_map - min_value) / (max_value - min_value)
+            
+            # Add epsilon to cells with zero detection to facilitate heuristic calculations
+            detection_map = np.where(detection_map < EPSILON, EPSILON, detection_map)
+        
+        return detection_map
