@@ -31,7 +31,7 @@ class Map:
 
         # Loop for each radar that must be generated
         for i in range(n_radars):
-            # Create a new radar
+            # Create a new radar with random parameters
             new_radar = Radar(location=Location(latitude=rand_lats[i], longitude=rand_lons[i]),
                               transmission_power=np.random.uniform(low=1, high=1000000),
                               antenna_gain=np.random.uniform(low=10, high=50),
@@ -48,43 +48,46 @@ class Map:
     def get_radars_locations_numpy(self) -> np.array:
         """ Returns an array with the coordiantes (lat, lon) of each radar registered in the map """
         locations = np.zeros(shape=(len(self.radars), 2), dtype=np.float32)
+
+        # Recorremos cada radar y guardamos su latitud y longitud en el array
         for i in range(len(self.radars)):
             locations[i] = self.radars[i].location.to_numpy()
         return locations
     
     def compute_detection_map(self) -> np.array:
         """ Computes the detection map for each coordinate in the map (with all the radars) """
-        # Create a grid of coordinates covering the entire map
+
+        # Creamos una malla de latitudes y longitudes que cubre el mapa entero
         lat_range = np.linspace(start=self.boundaries.min_lat, stop=self.boundaries.max_lat, num=self.height)
         lon_range = np.linspace(start=self.boundaries.min_lon, stop=self.boundaries.max_lon, num=self.width)
         
-        # Initialize detection map with zeros
+        # Creamos la matriz donde se guardará la detección de cada celda
         detection_map = np.zeros(shape=(self.height, self.width), dtype=np.float32)
         
-        # For each cell in the grid, compute detection level from all radars
+        # Para cada celda del mapa, calculamos cuánto se detecta allí
         for i in tqdm(range(self.height), desc="Computing detection map"):
             for j in range(self.width):
-                # Current cell coordinates
+                # Coordenadas reales de esta celda
                 lat = lat_range[i]
                 lon = lon_range[j]
                 
-                # Compute maximum detection level among all radars
+                # Calculamos la mayor detección recibida desde todos los radares
                 max_detection = 0.0
                 for radar in self.radars:
                     detection_level = radar.compute_detection_level(latitude=lat, longitude=lon)
                     max_detection = max(max_detection, detection_level)
                 
-                # Store the maximum detection level for this cell
+                # Guardamos ese valor máximo en la celda correspondiente
                 detection_map[i, j] = max_detection
         
-        # Apply MinMax scaling to normalize detection values to [0, 1] range as required
+        # Normalizamos todos los valores entre 0 y 1
         if np.max(detection_map) > 0:
             min_value = np.min(detection_map)
             max_value = np.max(detection_map)
-            if max_value > min_value:  # Avoid division by zero
+            if max_value > min_value:  # Evitamos dividir por cero
                 detection_map = (detection_map - min_value) / (max_value - min_value)
             
-            # Add epsilon to cells with zero detection to facilitate heuristic calculations
+            # Añadimos EPSILON a las celdas muy bajas para evitar valores 0 en los costes
             detection_map = np.where(detection_map < EPSILON, EPSILON, detection_map)
         
         return detection_map
