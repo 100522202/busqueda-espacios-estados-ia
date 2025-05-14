@@ -85,6 +85,7 @@ def build_graph(detection_map: np.array, tolerance: np.float32) -> nx.DiGraph:
                         if valor_vecino <= tolerance:
                             # El peso de la arista es el promedio entre origen y destino
                             peso = (valor + valor_vecino) / 2
+                            #Si lelgamos hasta aquí añadimos arista
                             G.add_edge((fila, columna), (nueva_fila, nueva_columna), weight=np.float32(peso))
 
     return G
@@ -141,16 +142,16 @@ def path_finding(G: nx.DiGraph,
         origen = tuple(map(int, reorden[i]))
         destino = tuple(map(int, reorden[i + 1]))
 
-        if not G.has_node(origen) or not G.has_node(destino):
-            print("No existe el nodo:", origen, "o", destino)
-            continue
+        # Comprobamos si los nodos existen en el grafo
+        if not G.has_node(origen):
+            raise ValueError(f"No se puede llegar al nodo origen: {origen}")
+        if not G.has_node(destino):
+            raise ValueError(f"No se puede llegar al nodo destino: {destino}")
 
         try:
-            # Buscamos la ruta óptima usando A*
             ruta = nx.astar_path(G, origen, destino, heuristic=heuristic_function)
         except nx.NetworkXNoPath:
-            print("No hay camino entre:", origen, "y", destino)
-            continue
+            raise ValueError(f"No se puede encontrar un camino entre {origen} y {destino}")
 
         # Codificamos la ruta como texto tipo "(y, x)" para poder visualizarla después
         camino_codificado = []
@@ -163,6 +164,7 @@ def path_finding(G: nx.DiGraph,
         plan.append(camino_codificado)
 
     return (plan, NODES_EXPANDED)
+
 
 def compute_path_cost(G: nx.DiGraph, solution_plan: list) -> np.float32:
     """ Computes the total cost of the whole planning solution """
