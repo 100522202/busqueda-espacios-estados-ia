@@ -4,7 +4,7 @@ Práctica de la asignatura **Inteligencia Artificial (UC3M)**.
 
 ---
 
-## 📌 Descripción
+## Descripción
 
 Implementación de algoritmos clásicos de búsqueda en espacios de estados para resolver problemas de navegación en laberintos y grafos cargados dinámicamente desde ficheros **JSON**.
 
@@ -15,7 +15,7 @@ Implementación de algoritmos clásicos de búsqueda en espacios de estados para
 
 ---
 
-## 🚀 Uso
+## Uso
 
 ```bash
 python main.py mapa.json
